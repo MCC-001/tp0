@@ -18,23 +18,36 @@ void* serializar_paquete(t_paquete* paquete, int bytes)
 
 int crear_conexion(char *ip, char* puerto)
 {
+	int ok=0, socket_cliente = -1;
 	struct addrinfo hints;
-	struct addrinfo *server_info;
+	struct addrinfo *server_info, *aux;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
 
 	getaddrinfo(ip, puerto, &hints, &server_info);
 
-	// Ahora vamos a crear el socket.
-	int socket_cliente = 0;
-
-	// Ahora que tenemos el socket, vamos a conectarlo
-
-
+	for(aux = server_info; aux!=NULL; aux = aux->ai_next)
+	{
+		// Ahora vamos a crear el socket.
+		socket_cliente = socket(aux->ai_family,
+		aux->ai_socktype,
+		aux->ai_protocol);
+		if(socket_cliente == -1){continue;}
+		
+		// Ahora que tenemos el socket, vamos a conectarlo
+		if(connect(socket_cliente, aux->ai_addr, aux->ai_addrlen) == 0) {break;}
+		close(socket_cliente);
+	}
+	
 	freeaddrinfo(server_info);
+	
+	if(aux==NULL)
+	{
+		printf("No se pudo encontrar servidor");
+		return -1;
+	}
 
 	return socket_cliente;
 }
